@@ -26,6 +26,10 @@ var (
 			if dir == "" {
 				dir = filepath.Dir(file)
 			}
+			binary, err := cmd.Flags().GetString("binary")
+			if err != nil {
+				return err
+			}
 
 			manifest, err := LoadManifest(file)
 			if err != nil {
@@ -35,7 +39,7 @@ var (
 			if err != nil {
 				return err
 			}
-			err = testnet.WriteConfig(dir)
+			err = testnet.Setup(dir, binary)
 			if err != nil {
 				return err
 			}
@@ -49,6 +53,7 @@ func init() {
 	rootCmd.Flags().StringP("file", "f", "", "Testnet TOML manifest")
 	_ = rootCmd.MarkFlagRequired("file")
 	rootCmd.Flags().StringP("dir", "d", "", "Directory to use for testnet data (defaults to manifest dir)")
+	rootCmd.Flags().StringP("binary", "b", "../../build/tendermint", "Tendermint Linux binary to hardlink into containers")
 }
 
 func main() {
