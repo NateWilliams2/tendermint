@@ -13,5 +13,5 @@ ENV TMHOME=/tendermint
 
 EXPOSE 26656 26657
 ENTRYPOINT ["/tendermint/tendermint"]
-CMD ["node", "--proxy_app", "kvstore"]
+CMD ["node"]
 STOPSIGNAL SIGTERM
