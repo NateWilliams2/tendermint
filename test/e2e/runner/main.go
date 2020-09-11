@@ -114,7 +114,6 @@ func (cli *CLI) Setup() error {
 	if err != nil {
 		return err
 	}
-	logger.Info(fmt.Sprintf("Generated testnet files in %q", cli.dir))
 	return nil
 }
 
