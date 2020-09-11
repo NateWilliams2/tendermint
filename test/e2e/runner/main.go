@@ -29,8 +29,10 @@ type CLI struct {
 func NewCLI() *CLI {
 	cli := &CLI{}
 	cli.root = &cobra.Command{
-		Use:   "runner",
-		Short: "End-to-end test runner",
+		Use:           "runner",
+		Short:         "End-to-end test runner",
+		SilenceUsage:  true,
+		SilenceErrors: true, // we'll output them ourselves in Run()
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			file, err := cmd.Flags().GetString("file")
 			if err != nil {
@@ -78,7 +80,7 @@ func NewCLI() *CLI {
 	cli.root.PersistentFlags().StringP("dir", "d", "",
 		"Directory to use for testnet data (defaults to manifest dir)")
 	cli.root.PersistentFlags().StringP("binary", "b", "../../build/tendermint",
-		"Tendermint binary to hardlink into containers")
+		"Tendermint binary to copy into containers")
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "setup",
