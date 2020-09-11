@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sort"
+	"strings"
 
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
@@ -43,6 +45,9 @@ func NewTestnet(manifest Manifest) (*Testnet, error) {
 		}
 		testnet.Nodes = append(testnet.Nodes, node)
 	}
+	sort.Slice(testnet.Nodes, func(i, j int) bool {
+		return strings.Compare(testnet.Nodes[i].Name, testnet.Nodes[j].Name) == -1
+	})
 
 	if err := testnet.Validate(); err != nil {
 		return nil, err
