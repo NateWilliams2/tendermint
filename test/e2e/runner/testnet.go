@@ -18,9 +18,10 @@ type Testnet struct {
 
 // Node represents a Tendermint node in a testnet
 type Node struct {
-	Name string
-	Key  crypto.PrivKey
-	IP   net.IP
+	Name      string
+	Key       crypto.PrivKey
+	IP        net.IP
+	LocalPort uint32
 }
 
 // NewTestnet creates a testnet from a manifest.
@@ -56,9 +57,10 @@ func NewNode(name string, nodeManifest ManifestNode) (*Node, error) {
 		return nil, fmt.Errorf("invalid IP %q for node %q", nodeManifest.IP, name)
 	}
 	return &Node{
-		Name: name,
-		Key:  ed25519.GenPrivKey(),
-		IP:   ip,
+		Name:      name,
+		Key:       ed25519.GenPrivKey(),
+		IP:        ip,
+		LocalPort: nodeManifest.LocalPort,
 	}, nil
 }
 
@@ -92,6 +94,16 @@ func (n Node) Validate(testnet Testnet) error {
 	}
 	if !testnet.IP.Contains(n.IP) {
 		return fmt.Errorf("node IP %v is not in testnet network %v", n.IP, testnet.IP)
+	}
+	if n.LocalPort > 0 {
+		if n.LocalPort <= 1024 {
+			return fmt.Errorf("local port %v must be >1024", n.LocalPort)
+		}
+		for _, peer := range testnet.Nodes {
+			if peer.Name != n.Name && peer.LocalPort == n.LocalPort {
+				return fmt.Errorf("peer %q also has local port %v", peer.Name, n.LocalPort)
+			}
+		}
 	}
 	return nil
 }

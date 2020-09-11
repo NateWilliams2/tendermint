@@ -101,7 +101,7 @@ func CopyBinary(binary string, target string) error {
 		return err
 	}
 
-	out, err := os.Create(target)
+	out, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, 0755)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,8 @@ services:
     container_name: {{ .Name }}
     image: tendermint/e2e-node
     ports:
-    - 26656-26657
+    - 26656
+    - {{ if .LocalPort }}{{ .LocalPort }}:{{ end }}26657
     volumes:
     - ./{{ .Name }}:/tendermint
     networks:
@@ -175,6 +176,7 @@ func MakeConfig(testnet *Testnet, node *Node) (*config.Config, error) {
 	cfg := config.DefaultConfig()
 	cfg.Moniker = node.Name
 	cfg.ProxyApp = "kvstore"
+	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
 
 	for _, peer := range testnet.Nodes {
 		if peer.Name == node.Name {

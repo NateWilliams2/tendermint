@@ -17,7 +17,8 @@ type Manifest struct {
 
 // ManifestNode represents a testnet manifest node.
 type ManifestNode struct {
-	IP string
+	IP        string
+	LocalPort uint32
 }
 
 // ParseManifest parses a testnet manifest from TOML.
