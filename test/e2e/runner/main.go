@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/libs/log"
@@ -24,7 +25,7 @@ var (
 				return err
 			}
 			if dir == "" {
-				dir = filepath.Dir(file)
+				dir = strings.TrimSuffix(file, filepath.Ext(file))
 			}
 			binary, err := cmd.Flags().GetString("binary")
 			if err != nil {
