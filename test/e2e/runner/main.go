@@ -40,7 +40,7 @@ var (
 			if err != nil {
 				return err
 			}
-			err = testnet.Setup(dir, binary)
+			err = Setup(testnet, dir, binary)
 			if err != nil {
 				return err
 			}
