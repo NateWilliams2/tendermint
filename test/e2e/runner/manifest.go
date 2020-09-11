@@ -11,13 +11,13 @@ import (
 // Manifest represents a testnet manifest, specified as TOML.
 type Manifest struct {
 	Name  string
+	IP    string
 	Nodes map[string]ManifestNode `toml:"node"`
 }
 
 // ManifestNode represents a testnet manifest node.
 type ManifestNode struct {
-	Topology  string
-	Validator bool
+	IP string
 }
 
 // ParseManifest parses a testnet manifest from TOML.

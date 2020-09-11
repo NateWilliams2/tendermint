@@ -3,6 +3,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -21,9 +22,9 @@ import (
 
 // Testnet represents a single testnet
 type Testnet struct {
-	Name    string
-	Network *net.IPNet
-	Nodes   []*Node
+	Name  string
+	IP    *net.IPNet
+	Nodes []*Node
 }
 
 // Node represents a Tendermint node in a testnet
@@ -35,33 +36,75 @@ type Node struct {
 
 // NewTestnet creates a testnet from a manifest.
 func NewTestnet(manifest Manifest) (*Testnet, error) {
-	ip, ipNet, err := net.ParseCIDR("10.200.0.0/24")
+	_, ipNet, err := net.ParseCIDR(manifest.IP)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid network IP %q: %w", manifest.IP, err)
 	}
-	ip = incrIP(ip) // This now points to the gateway address
 	testnet := &Testnet{
-		Name:    manifest.Name,
-		Network: ipNet,
-		Nodes:   []*Node{},
+		Name:  manifest.Name,
+		IP:    ipNet,
+		Nodes: []*Node{},
 	}
 
-	for name, manifestNode := range manifest.Nodes {
-		node := &Node{
-			Name: name,
-			Key:  ed25519.GenPrivKey(),
-		}
-		switch manifestNode.Topology {
-		case "host", "":
-			ip = incrIP(ip)
-			node.IP = ip
-		default:
-			return nil, fmt.Errorf("unknown topology %q", manifestNode.Topology)
+	for name, nodeManifest := range manifest.Nodes {
+		node, err := NewNode(name, nodeManifest)
+		if err != nil {
+			return nil, err
 		}
 		testnet.Nodes = append(testnet.Nodes, node)
 	}
 
+	if err := testnet.Validate(); err != nil {
+		return nil, err
+	}
 	return testnet, nil
+}
+
+// NewNode creates a new testnet node from a node manifest.
+func NewNode(name string, nodeManifest ManifestNode) (*Node, error) {
+	ip := net.ParseIP(nodeManifest.IP)
+	if ip == nil {
+		return nil, fmt.Errorf("invalid IP %q for node %q", nodeManifest.IP, name)
+	}
+	return &Node{
+		Name: name,
+		Key:  ed25519.GenPrivKey(),
+		IP:   ip,
+	}, nil
+}
+
+// Validate validates a testnet.
+func (t Testnet) Validate() error {
+	if t.Name == "" {
+		return errors.New("network has no name")
+	}
+	if t.IP == nil {
+		return errors.New("network has no IP")
+	}
+	if len(t.Nodes) == 0 {
+		return errors.New("network has no nodes")
+	}
+	for _, node := range t.Nodes {
+		if err := node.Validate(t); err != nil {
+			return fmt.Errorf("invalid node %q: %w", node.Name, err)
+		}
+	}
+
+	return nil
+}
+
+// Validate validates a node.
+func (n Node) Validate(testnet Testnet) error {
+	if n.Name == "" {
+		return errors.New("node has no name")
+	}
+	if n.IP == nil {
+		return errors.New("node has no IP address")
+	}
+	if !testnet.IP.Contains(n.IP) {
+		return fmt.Errorf("node IP %v is not in testnet network %v", n.IP, testnet.IP)
+	}
+	return nil
 }
 
 // Setup sets up the testnet files in the given directory.
@@ -131,7 +174,7 @@ networks:
     ipam:
       driver: default
       config:
-      - subnet: {{ .Network }}
+      - subnet: {{ .IP }}
 
 services:
 {{- range .Nodes }}
