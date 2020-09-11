@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/libs/log"
@@ -181,6 +182,19 @@ func (cli *CLI) Start() error {
 		if err := cli.runDocker("up", "-d", node.Name); err != nil {
 			return err
 		}
+	}
+	logger.Info("Waiting for nodes...")
+	for _, node := range cli.testnet.Nodes {
+		if err := node.WaitFor(0, 10*time.Second); err != nil {
+			return err
+		}
+		logger.Info(fmt.Sprintf("Node %v up on http://127.0.0.1:%v", node.Name, node.LocalPort))
+	}
+
+	node := cli.testnet.Nodes[0]
+	logger.Info(fmt.Sprintf("Waiting for height 3 (polling node %v)", node.Name))
+	if err := node.WaitFor(3, 20*time.Second); err != nil {
+		return err
 	}
 	return nil
 }

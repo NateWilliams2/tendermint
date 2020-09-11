@@ -6,9 +6,12 @@ import (
 	"net"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
+	rpc "github.com/tendermint/tendermint/rpc/client"
+	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 )
 
 // Testnet represents a single testnet
@@ -111,4 +114,29 @@ func (n Node) Validate(testnet Testnet) error {
 		}
 	}
 	return nil
+}
+
+// Client returns an RPC client for a node.
+func (n Node) Client() (rpc.Client, error) {
+	return rpchttp.New(fmt.Sprintf("http://127.0.0.1:%v", n.LocalPort), "/websocket")
+}
+
+// WaitFor waits for the node to become available and catch up to the given block height.
+func (n Node) WaitFor(height int, timeout time.Duration) error {
+	client, err := n.Client()
+	if err != nil {
+		return err
+	}
+	started := time.Now()
+	for {
+		// FIXME This should use a context, but needs context support in RPC
+		if time.Since(started) >= timeout {
+			return fmt.Errorf("timeout after %v", timeout)
+		}
+		status, err := client.Status()
+		if err == nil && status.SyncInfo.LatestBlockHeight >= int64(height) {
+			return nil
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
 }
